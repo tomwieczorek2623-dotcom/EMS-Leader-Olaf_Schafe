@@ -95,6 +95,13 @@
 
   .menu-toggle{ display:none; }
 
+  .navlist button:focus-visible,
+  .btn:focus-visible,
+  .menu-toggle:focus-visible{
+    outline:2px solid var(--navy);
+    outline-offset:3px;
+  }
+
   main{ position:relative; padding-top:104px; }
   .page{
     display:none; padding:56px 24px 90px; max-width:980px; margin:0 auto;
@@ -284,7 +291,7 @@
       </div>
     </div>
     <ul class="navlist" id="navlist"></ul>
-    <div class="menu-toggle" id="menuToggle">☰</div>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Menü öffnen" aria-controls="navlist" aria-expanded="false">☰</button>
   </div>
 </div>
 
@@ -462,28 +469,62 @@ main.innerHTML = `
 </section>
 `;
 
+const navlistEl = document.getElementById('navlist');
+const menuToggle = document.getElementById('menuToggle');
+const topbar = document.getElementById('topbar');
+
 function goTo(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  document.querySelectorAll('.navlist button').forEach(b=>b.classList.toggle('active', b.dataset.target===id));
-  window.scrollTo({top:0, behavior:'smooth'});
-  document.getElementById('navlist').classList.remove('open');
-  // restart reveal animations
-  document.querySelectorAll('#page-'+id+' .reveal').forEach(el=>{
-    el.style.animation = 'none';
-    void el.offsetWidth;
-    el.style.animation = '';
+  const targetPage = document.getElementById('page-' + id);
+  if (!targetPage) return;
+
+  document.querySelectorAll('.page').forEach(page => {
+    page.classList.remove('active');
+  });
+
+  targetPage.classList.add('active');
+
+  document.querySelectorAll('.navlist button').forEach(button => {
+    const isActive = button.dataset.target === id;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-current', isActive ? 'page' : 'false');
+  });
+
+  navlistEl.classList.remove('open');
+  menuToggle.setAttribute('aria-expanded', 'false');
+  menuToggle.setAttribute('aria-label', 'Menü öffnen');
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Reveal-Animationen beim Seitenwechsel sauber neu starten.
+  targetPage.querySelectorAll('.reveal').forEach(element => {
+    element.style.animation = 'none';
+    void element.offsetWidth;
+    element.style.animation = '';
   });
 }
-document.querySelectorAll('.navlist button').forEach(b=>{
-  b.addEventListener('click', ()=>goTo(b.dataset.target));
+
+document.querySelectorAll('.navlist button').forEach(button => {
+  button.addEventListener('click', () => goTo(button.dataset.target));
 });
-document.getElementById('menuToggle').addEventListener('click', ()=>{
-  document.getElementById('navlist').classList.toggle('open');
+
+menuToggle.addEventListener('click', () => {
+  const isOpen = navlistEl.classList.toggle('open');
+  menuToggle.setAttribute('aria-expanded', String(isOpen));
+  menuToggle.setAttribute('aria-label', isOpen ? 'Menü schließen' : 'Menü öffnen');
 });
-window.addEventListener('scroll', ()=>{
-  document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 8);
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    navlistEl.classList.remove('open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+    menuToggle.setAttribute('aria-label', 'Menü öffnen');
+  }
 });
+
+window.addEventListener('scroll', () => {
+  topbar.classList.toggle('scrolled', window.scrollY > 8);
+});
+
 goTo('start');
 </script>
 </body>
