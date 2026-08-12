@@ -284,7 +284,7 @@
       </div>
     </div>
     <ul class="navlist" id="navlist"></ul>
-    <div class="menu-toggle" id="menuToggle">☰</div>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Menü öffnen" aria-expanded="false">☰</button>
   </div>
 </div>
 
@@ -305,7 +305,7 @@ const pages = [
 const navlist = document.getElementById('navlist');
 pages.forEach(p=>{
   const li = document.createElement('li');
-  li.innerHTML = `<button data-target="${p.id}"><span class="num">${p.num}</span>${p.label}</button>`;
+  li.innerHTML = `<button type="button" data-target="${p.id}" aria-controls="page-${p.id}"><span class="num">${p.num}</span>${p.label}</button>`;
   navlist.appendChild(li);
 });
 
@@ -469,27 +469,60 @@ main.innerHTML = `
 `;
 
 function goTo(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
-  document.querySelectorAll('.navlist button').forEach(b=>b.classList.toggle('active', b.dataset.target===id));
+  const targetPage = document.getElementById('page-' + id);
+  if (!targetPage) return;
+
+  document.querySelectorAll('.page').forEach(page => {
+    page.classList.toggle('active', page === targetPage);
+  });
+
+  document.querySelectorAll('.navlist button').forEach(button => {
+    const active = button.dataset.target === id;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-current', active ? 'page' : 'false');
+  });
+
+  const nav = document.getElementById('navlist');
+  const menu = document.getElementById('menuToggle');
+  nav.classList.remove('open');
+  menu.setAttribute('aria-expanded', 'false');
+  menu.setAttribute('aria-label', 'Menü öffnen');
+
   window.scrollTo({top:0, behavior:'smooth'});
-  document.getElementById('navlist').classList.remove('open');
-  // restart reveal animations
-  document.querySelectorAll('#page-'+id+' .reveal').forEach(el=>{
+
+  // Restart reveal animations for the selected page.
+  targetPage.querySelectorAll('.reveal').forEach(el => {
     el.style.animation = 'none';
     void el.offsetWidth;
     el.style.animation = '';
   });
 }
-document.querySelectorAll('.navlist button').forEach(b=>{
-  b.addEventListener('click', ()=>goTo(b.dataset.target));
+
+document.querySelectorAll('.navlist button').forEach(button => {
+  button.addEventListener('click', () => goTo(button.dataset.target));
 });
-document.getElementById('menuToggle').addEventListener('click', ()=>{
-  document.getElementById('navlist').classList.toggle('open');
+
+const menuToggle = document.getElementById('menuToggle');
+const navlistElement = document.getElementById('navlist');
+
+menuToggle.addEventListener('click', () => {
+  const isOpen = navlistElement.classList.toggle('open');
+  menuToggle.setAttribute('aria-expanded', String(isOpen));
+  menuToggle.setAttribute('aria-label', isOpen ? 'Menü schließen' : 'Menü öffnen');
 });
-window.addEventListener('scroll', ()=>{
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 780) {
+    navlistElement.classList.remove('open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+    menuToggle.setAttribute('aria-label', 'Menü öffnen');
+  }
+});
+
+window.addEventListener('scroll', () => {
   document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 8);
 });
+
 goTo('start');
 </script>
 </body>
